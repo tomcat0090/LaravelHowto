@@ -177,5 +177,5 @@ Route::get('/database', function(){
 
 >ブラウザで localhost/database にアクセスし、（sail up -d されておりコンテナ起動必須）
 Database Connected: example_app
-と出力されていれば接続OK。
+と出力されていれば接続OKです。
 
