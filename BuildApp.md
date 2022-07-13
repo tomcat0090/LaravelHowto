@@ -1,0 +1,181 @@
+# 開発環境構築編
+
+## Laravelとは
+PHPのフレームワークの一つです。
+マイクロソフトの.NETの開発に参加していたテイラー（Taylor Otwell）氏が開発したPHPフレームワークで、2011年にリリースされました。
+手軽で扱いやすく、代表的なPHPフレームワークの1つとして認識されています。PHPフレームワークのSymphony（シンフォニー）を基に開発されたため、これまでのタイプに慣れている方でも比較的扱いやすい仕様となっています。
+
+<br>
+
+## 開発環境構築の概要
+主に、PHPライブラリ管理ツールのcomposerか、DockerであるLaravel sailを使って環境構築をする方法がある。
+現在はLaravel sail(以下、sail)が推奨されているので、これで環境構築をしていきます。
+一応、composerとsailについて以下にまとめておきます。
+
+**composer**
+> PHPやDatabase、Node.jsなどを個々にインストールしていく必要あり。
+初学者にはわかりやすいが、面倒で、 複数人で同じ開発環境をシェアしにくい。
+
+**sail**
+>sailはDockerなので、個別にインストールしていく必要がなく、sailコマンドひとつで環境構築が可能。
+複数人での開発だったり、後日環境を再構築する際に、同じ環境を作れる点もなどの利点あり。
+便利で簡単なため、現在ではsailを使用するのが推奨されている。
+
+<br>
+
+## sailで開発環境を構築する手順
+1. [Windowsの方はWSLのインストール](https://chigusa-web.com/blog/wsl2-win11/)
+
+
+2. [Docker Dektopのインストール](
+https://chigusa-web.com/blog/windowsにdockerをインストールしてpython環境を構築/)
+
+3. [VS codeのインストール](
+https://chigusa-web.com/blog/vs-code-install/)
+
+4. ターミナルを開く。（Windowsの場合、WSL2(Ubuntu)を開く。）
+
+5. 任意の場所にプロジェクトを作成する。
+
+6. 以下のコマンドでLaravelプロジェクトを作成する。(bashをzshに変更可)
+
+~~~
+Mac: curl -s "https://laravel.build/example-app" | bash 
+~~~
+~~~
+Win: curl -s https://laravel.build/example-app | bash
+~~~
+~~~
+Lin: curl -s https://laravel.build/example-app | bash 
+~~~
+
+
+> また、プロジェクトを作成する時に、Dockerのymlファイルも一緒に生成されるが、そこに任意で以下のコンテナイメージを追加できる。
+mysql, pgsql, mariadb, redis, memcached, milisearch, minio, selenium, mailhog
+何も指定せず、上記のコマンドでプロジェクトを生成した場合、selenium, mailhog, milisearch, redis, mysqlが記述される。
+以下のように、( ?with=mysql,redis )を追加すれば指定できる。
+~~~
+curl -s "https://laravel.build/example-app?with=mysql,redis" | bash
+~~~
+
+
+7. プロジェクトディレクトリに移動する。
+~~~
+cd example-app
+~~~
+
+8. VScodeを開く
+~~~
+code .
+~~~
+
+9. sailコマンドのalias作成
+> sail コマンドを実行するのに「./vendor/bin/sail」と入力しないといけく、不便なため、alias を指定する。
+~~~
+bash -> alias sail = '[ -f sail ] && bash sail || bash vendor/bin/sail'
+~~~
+~~~
+zsh -> alias sail='./vendor/bin/sail'
+~~~
+
+10. sailでプロジェクトを起動してみる。
+> Dockerで環境構築したので、sail コマンド（＝Dockerコマンド）でプロジェクトを起動する。<br>※すべてのDockerコンテナをバックグラウンドで起動するには、Sailを「デタッチdetached)」モードで起動する。
+~~~
+sail up -d
+~~~
+
+ >立ち上げたプロジェクトを停止する場合は（sail stop）を実行。sailコマンドの使い方はdocker コマンドと同じ。
+~~~
+sail stop
+~~~
+
+11. 立ち上げたプロジェクトへアクセス
+> http://localhost/　にアクセスすれば起動したLaravelプロジェクトにアクセスできる。
+
+
+### sailコマンドの補足
+> phpやnodeコマンドを実行中のコンテナ内で利用する場合は、下記コマンドで実行。
+~~~
+（sail php --version）
+~~~
+~~~
+（sail node--version）
+~~~
+
+> Composerコマンドを実行中のコンテナ内で利用する場合は、下記コマンドで実行。
+ ちなみに、Laravel Sailのアプリケーションコンテナには、Composer2.xがインストール済み。
+~~~
+（sail composer -v）
+~~~
+
+
+### ついでにこのタイミングでLaravel artisanコマンドにいて説明する
+
+> LaravelにはArtisanというコマンドが用意されており、フレームワーク側からなんらかの処理をしたい場合などにとても便利なCLIコマンドで、アプリケーションの構築に役立つコマンドが多数提供されている。
+使用可能なすべてのArtisanコマンドのリストを表示するには、artisan list または、sail artisan list コマンドを実行。
+例えばデータベースにテーブルを作成したり、カラムの内容を変更削除などのデータベース関連の操作や、コントローラーの作成、現在設定しているルートの確認などができる。
+
+
+<br><br>
+## ディレクトリの各フォルダとファイルの説明
+下記のURLは、日本語版オフィシャルドキュメントのフォルダとファイルの説明です。
+綺麗にまとまっていて見やすいのでこちらを参照してください。<br>
+[ディレクトリ構造いついて](https://readouble.com/laravel/8.x/ja/structure.html　)
+
+<br>
+
+## とりあえずやっておく必須設定
+1. ロケーションの設定
+> example-app/config/app.php ファイルの中に記載されている下記項目を以下のように変更。
+~~~
+.......
+'timezone' => 'Asia/Tokyo',
+.......
+'local' => 'ja',
+.......
+~~~
+
+2. envファイル内のデータベースの設定
+> example-app/.env ファイルの中に記載されている下記項目を設定。
+~~~
+.......
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=example_app     =>データベースの名前
+DB_USERNAME=root             =>元々はsailになっている
+DB_PASSWORD=password
+.......
+~~~
+
+> .env ファイルを上記のように設定したら、一度 sail stop し、もう一度 sail up -d をする。
+DB_USERNAME=sail のまま sail up -d していた場合、mysql 内に入っても、ユーザーがsailでは権限がなく、何もできない。
+設定を root に変更した状態でコンテナを再起動し、sail mysql コマンドでmysql 内に入る。
+create database example-app コマンドで新たにデータベースを作成し、.env ファイルのDB_DATABASE=example_app の名前の部分は作成したデータベース名と一致させる。
+
+3. 繋がっているか確認してみる。
+>example_app/resources/view/database.blade.php ファイルを生成し、以下のコードを貼り付けて保存。
+~~~html
+<strong>Database Connected: </strong>
+    <?php
+        try {
+            \DB::connection()->getPDO();
+            echo \DB::connection()->getDatabaseName();
+            } catch (\Exception $e) {
+            echo 'None';
+        }
+    ?>
+~~~
+
+>example_app/routes/web.php ファイルに下記を追記。
+
+~~~php
+Route::get('/database', function(){
+    return view('database');
+});
+~~~
+
+>ブラウザで localhost/database にアクセスし、（sail up -d されておりコンテナ起動必須）
+Database Connected: example_app
+と出力されていれば接続OK。
+
