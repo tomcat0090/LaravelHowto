@@ -310,3 +310,5 @@ class ShowProfile extends Controller
 }
 ~~~
 > [マジックメソッドについてのさらに詳しい情報はこちらからそうぞ](https://atmarkit.itmedia.co.jp/ait/articles/1804/05/news008.html)
+
+> push test
