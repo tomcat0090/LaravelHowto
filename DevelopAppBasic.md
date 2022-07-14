@@ -1,6 +1,6 @@
 # プロジェクト構築編
 
-## ルートについて
+# ルート
 
 > Laravelでのルートを定義するデフォルトファイルは,
 >example_app/routes/web.php ファイルです。
@@ -98,7 +98,7 @@ php artisan route:list (sail未使用の場合)
 
 <br>
 
-## アプリケーションをCSRF攻撃から守る
+# アプリケーションをCSRF攻撃から守る
 ~~~html
 <form method="POST" action={{ route("profile") }}>
     @csrf
@@ -112,8 +112,27 @@ php artisan route:list (sail未使用の場合)
 
 <br>
 
-## コントローラーについて
 
+* APIルートを定義する
+> LaravelでAPIルートを定義する際は、上記での定義方法と少し異なります。まず初めに、APIルートを定義する場合は、example-app/routes/api.php ファイルに定義します。このファイル内には以下のようになっていると思います。
+~~~php
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+});
+~~~
+
+> すでに定義されているルートの中に埋め込む形でAPIルートを以下のように定義でき、コントローラーへ処理を渡せます。
+~~~php
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    Route::post('/setvalue', [ApiController::class, 'store'])
+    return $request->user();
+});
+~~~
+> 定義したAPIルートへアクセスする場合、web.phpで定義されたルートへは、[http://localhost:8000/setvalue]ですが、APIルートの場合は、[http://localhost:8000/api/setvalue]でアクセスできます。
+
+<br>
+
+# コントローラー
 <br>
 
 * 概要
@@ -167,25 +186,6 @@ Route::resource('example', ExampleController::class);
 
 [さらに詳しいルートの説明はこちらの公式ドキュメントを参照してください](https://readouble.com/laravel/9.x/ja/controllers.html)
 
-
-<br>
-
-* APIルートを定義する
-> LaravelでAPIルートを定義する際は、上記での定義方法と少し異なります。まず初めに、APIルートを定義する場合は、example-app/routes/api.php ファイルに定義します。このファイル内には以下のようになっていると思います。
-~~~php
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
-~~~
-
-> すでに定義されているルートの中に埋め込む形でAPIルートを以下のように定義でき、コントローラーへ処理を渡せます。
-~~~php
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    Route::post('/setvalue', [ApiController::class, 'store'])
-    return $request->user();
-});
-~~~
-> 定義したAPIルートへアクセスする場合、web.phpで定義されたルートへは、[http://localhost:8000/setvalue]ですが、APIルートの場合は、[http://localhost:8000/api/setvalue]でアクセスできます。
 
 <br>
 
@@ -311,4 +311,339 @@ class ShowProfile extends Controller
 ~~~
 > [マジックメソッドについてのさらに詳しい情報はこちらからそうぞ](https://atmarkit.itmedia.co.jp/ait/articles/1804/05/news008.html)
 
-> push test
+<br>
+
+# リダイレクト
+
+## 他のURLへリダイレクト
+> ユーザーを他のURLへリダイレクトさせるための定義方法
+
+~~~php
+---------------------------------------
+Route::get('/dashboard', function () {
+    return redirect('test/index');
+});
+---------------------------------------
+public function update(Request $request)
+{
+    .....
+    return redirect()->('test/index', 301);
+}
+---------------------------------------
+~~~
+> データと一緒にリダイレクトする
+
+~~~php
+return redirect('home')->with('result', '完了');
+~~~
+
+<br>
+
+## 直前のURLへリダイレクト
+> ユーザーを直前のURLへリダイレクトするときの定義方法
+
+~~~php
+return back();
+~~~
+> データと一緒に直前URLへリダイレクトする
+~~~php
+return back()->with('result', 'ok！');
+return back()->withInput();     // 送信データがセッション内に格納される
+~~~
+
+> [上記以外にもいろんな定義方法があります。](https://qiita.com/manbolila/items/767e1dae399de16813fb)
+
+<br>
+
+## その他のリダイレクト
+
+> コントローラアクションに対するリダイレクト
+
+~~~php
+return redirect()->action([UserController::class, 'index']);
+~~~
+> アプリケーション外のドメインへリダイレクト
+~~~php
+return redirect()->away('https://www.google.com');
+~~~
+
+>[上記以外のリダイレクト方法をさらに詳しくはこちら](https://readouble.com/laravel/9.x/ja/responses.html)
+
+<br>
+
+# View
+
+> ビューを生成するファイルは、example-app/resources/views フォルダで管理します。
+このフォルダ内に .blade.php 拡張子のついたファイルを配置すれば、ビューを生成できます。<br>
+.blade.php拡張子は、ファイルにBladeテンプレートが含まれていることを表現しており、Bladeテンプレートでは、"if"文や"foreach"文、"error"文を簡単に定義できます。<br>
+Bladeテンプレートについて詳しくは次項で説明します。
+
+<br>
+
+## 一番シンプルなビュー生成
+~~~html
+<!-- View stored in resources/views/greeting.blade.php -->
+
+<html>
+    <body>
+        <h1>Hello People</h1>
+    </body>
+</html>
+~~~
+
+> 上記のようなgreeting.blade.phpファイルのビューを生成する場合は以下のように定義でき、.blade.phpファイルの名前（greeting）を指定すればよい。
+
+~~~php
+---------------------------------------
+Route::get('/greet', function () {
+    return view('greeting');
+});
+---------------------------------------
+public function update(Request $request)
+{
+    .....
+    return view('greeting');
+}
+---------------------------------------
+~~~
+
+<br>
+
+## データと一緒にビュー生成
+~~~html
+<!-- View stored in resources/views/greeting.blade.php -->
+
+<html>
+    <body>
+        <h1>Hello, {{ $name }}</h1>
+    </body>
+</html>
+~~~
+
+> 上記のようなデータが必要なgreeting.blade.phpファイルのビューを生成する場合は以下のように定義できる。
+> 
+~~~php
+---------------------------------------
+Route::get('/greet', function () {
+    return view('greeting', ['name' => 'James']);
+});
+---------------------------------------
+public function update(Request $request)
+{
+    .....
+    return view('greeting', ['name' =>  $request->name]);
+}
+---------------------------------------
+~~~
+
+<br>
+
+# Bladeテンプレート
+> Bladeは、Laravelに含まれているシンプルでありながら強力なテンプレートエンジンです。<br>
+> 前項ですでに述べましたが、Bladeテンプレートファイルは.blade.phpファイル拡張子を使用し、通常はresources/viewsディレクトリに保存します。<br>
+> Bladeファイルの表示方法も前項で述べているので、そちらを参考にしてください。
+
+<br>
+
+## ディレクティブ
+> BladeはPHPのif文、 foreach文、 switch文のショートカットを提供しています。こうしたショートカットは、非常にクリーンで簡潔なコーディング方法を提供する一方で、慣れ親しんだ同等のPHP構文も生かしています。
+
+<br>
+
+* 生PHP
+> 状況によっては、PHPコードをビューに埋め込める。
+~~~php
+@php
+    $counter = 1;
+@endphp
+~~~
+
+<br>
+
+* コメント
+> ビューにコメントを定義することができます。
+~~~php
+{{-- このコメントはHTMLのなかに存在しない --}}
+~~~
+
+<br>
+
+* ifディレクティブ
+
+> @if、@elseif、@else、@endifディレクティブなどや他にも、PHPの構文と同じように機能します。
+~~~php
+@if (count($records) === 1)
+    // １レコードあります。
+@elseif (count($records) > 1)
+    // 複数レコードあります。
+@else
+    // レコードがありません。
+@endif
+
+@unless (Auth::check())
+    // あなたはサインインしていません。
+@endunless
+
+@isset($records)
+    // $recordsが定義済みで、NULLではない…
+@endisset
+
+@empty($records)
+    // $recordsは「空」
+@endempty
+~~~
+
+<br>
+
+* 認証ディレクティブ
+> @authおよび@guestディレクティブを使用すると、現在のユーザーが認証済みであるか、ゲストであるかを簡潔に判断できます。
+~~~php
+@auth
+    // ユーザーは認証済み…
+@endauth
+
+@guest
+    // ユーザーは認証されていない…
+@endguest
+
+
+@auth('admin')
+    // ユーザーは認証済み…
+@endauth
+
+@guest('admin')
+    // ユーザーは認証されていない…
+@endguest
+~~~
+
+<br>
+
+* Switchディレクティブ
+> Switchステートメントは、@switch、@case、@break、@default、@endswitchディレクティブを使用して作成できます。
+~~~php
+@switch($i)
+    @case(1)
+        最初のケース…
+        @break
+
+    @case(2)
+        ２番めのケース…
+        @break
+
+    @default
+        デフォルトのケース…
+@endswitch
+~~~
+
+<br>
+
+* 繰り返しディレクティブ
+~~~php
+@for ($i = 0; $i < 10; $i++)
+    現在の値は、{{ $i }}
+@endfor
+
+@foreach ($users as $user)
+    <p>このユーザーは：{{ $user->id }}</p>
+@endforeach
+
+@forelse ($users as $user)
+    <li>{{ $user->name }}</li>
+@empty
+    <p>ユーザーはいません。</p>
+@endforelse
+
+@while (true)
+    <p>無限ループ中です。</p>
+@endwhile
+~~~
+
+<br>
+
+> ループを使用する場合は、@continueおよび@breakディレクティブを使用して、現在の反復をスキップするか、ループを終了することもできます。
+~~~php
+@foreach ($users as $user)
+    @if ($user->type == 1)
+        @continue
+    @endif
+
+    <li>{{ $user->name }}</li>
+
+    @if ($user->number == 5)
+        @break
+    @endif
+@endforeach
+
+
+@foreach ($users as $user)
+    @continue($user->type == 1)
+
+    <li>{{ $user->name }}</li>
+
+    @break($user->number == 5)
+@endforeach
+~~~
+
+<br>
+
+* ループ変数
+> foreachループの反復処理中、ループの内部では$loop変数を利用できます。この変数により、現在のループのインデックスや、ループの最初の反復なのか最後の反復なのか、といった便利な情報にアクセスすることができます。
+~~~php
+@foreach ($users as $user)
+    @if ($loop->first)
+        これが最初の繰り返しです。
+    @endif
+
+    @if ($loop->last)
+        これが最後の繰り返しです。
+    @endif
+
+    <p>このユーザーは：{{ $user->id }}</p>
+@endforeach
+~~~
+> また、ネストしたループ内にいる場合は、parentプロパティを介して親ループの$loop変数にアクセスできます。
+~~~php
+@foreach ($users as $user)
+    @foreach ($user->posts as $post)
+        @if ($loop->parent->first)
+            これは親ループの最初の繰り返しです。
+        @endif
+    @endforeach
+@endforeach
+~~~
+
+<br>
+
+> $loop変数は、他にもいろいろと便利なプロパティを持っています。
+
+| プロパティ | 説明  |
+| ----- | --- |
+|$loop->index	|現在の反復のインデックス（初期値０）|
+|$loop->iteration	|現在の反復数（初期値１）|
+|$loop->remaining	|反復の残数。|
+|$loop->count	|反復している配列の総アイテム数|
+|$loop->first	|ループの最初の繰り返しか判定|
+|$loop->last	|ループの最後の繰り返しか判定|
+|$loop->even	|今回が偶数回目の繰り返しか判定|
+|$loop->odd	|今回が奇数回目の繰り返しか判定|
+|$loop->depth	|現在のループのネストレベル|
+|$loop->parent	|ループがネストしている場合、親のループ変数|
+
+<br>
+
+* Methodフィールド
+> HTMLフォームは<span style="color:red;">put、patch、delete</span>リクエストを作ることができないので、これらのHTTP動詞を偽装するために_Method隠しフィールドを追加する必要があります。@methodBladeディレクティブは、皆さんのためこのフィールドを作成します。
+~~~php
+<form action="/foo/bar" method="POST">
+    @method('PUT')
+
+    ...
+</form>
+~~~
+
+<br>
+
+> 上記以外に、Bladeテンプレートにはたくさんの機能があります。より詳しい情報は公式ドキュメントに詳しく掲載されています。[こちらから参照してください。](https://readouble.com/laravel/9.x/ja/blade.html)
+
+<br>
+
