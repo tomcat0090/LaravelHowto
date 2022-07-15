@@ -124,8 +124,7 @@ sail stop
 
 <br>
 
-## とりあえずやっておく必須であろう設定
-1. ロケーションの設定
+## ロケーションの設定
 > example-app/config/app.php ファイルの中に記載されている下記項目を以下のように変更。
 ~~~
 .......
@@ -134,48 +133,3 @@ sail stop
 'local' => 'ja',
 .......
 ~~~
-
-2. envファイル内のデータベースの設定
-> example-app/.env ファイルの中に記載されている下記項目を設定。
-~~~
-.......
-DB_CONNECTION=mysql
-DB_HOST=mysql
-DB_PORT=3306
-DB_DATABASE=example_app     =>データベースの名前
-DB_USERNAME=root             =>元々はsailになっている
-DB_PASSWORD=password
-.......
-~~~
-
-> .env ファイルを上記のように設定したら、一度 sail stop し、もう一度 sail up -d をする。
-DB_USERNAME=sail のまま sail up -d していた場合、mysql 内に入っても、ユーザーがsailでは権限がなく、何もできない。
-設定を root に変更した状態でコンテナを再起動し、sail mysql コマンドでmysql 内に入る。
-create database example-app コマンドで新たにデータベースを作成し、.env ファイルのDB_DATABASE=example_app の名前の部分は作成したデータベース名と一致させる。
-
-3. 繋がっているか確認してみる。
->example_app/resources/view/database.blade.php ファイルを生成し、以下のコードを貼り付けて保存。
-~~~html
-<strong>Database Connected: </strong>
-    <?php
-        try {
-            \DB::connection()->getPDO();
-            echo \DB::connection()->getDatabaseName();
-            } catch (\Exception $e) {
-            echo 'None';
-        }
-    ?>
-~~~
-
->example_app/routes/web.php ファイルに下記を追記。
-
-~~~php
-Route::get('/database', function(){
-    return view('database');
-});
-~~~
-
->ブラウザで localhost/database にアクセスし、（sail up -d されておりコンテナ起動必須）
-Database Connected: example_app
-と出力されていれば接続OKです。
-
