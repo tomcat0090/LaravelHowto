@@ -78,7 +78,9 @@ Route::get(
 )->name('profile');
 ~~~
 
-> 名前付きルートの定義ができ、->name('example_name'); を上記コードのように記述すれば、定義した名前を指定するだけでルートへのアクセスが可能になり便利です。
+> 名前付きルートの定義ができ、->name('example_name'); を上記コードのように記述すれば、
+> 定義した名前を指定するだけでルートへのアクセスが可能になり便利です。
+> この機能をルートヘルパといいますが、別セクションで詳しく説明します。
 
 <br>
 
@@ -644,6 +646,257 @@ public function update(Request $request)
 <br>
 
 > 上記以外に、Bladeテンプレートにはたくさんの機能があります。より詳しい情報は公式ドキュメントに詳しく掲載されています。[こちらから参照してください。](https://readouble.com/laravel/9.x/ja/blade.html)
+
+<br>
+
+## ルートヘルパ
+<br>
+
+* 定義方法
+
+> ルートヘルパは、ルート定義の際にname()メソッドを使用し、ルートに名前を付けることができます。
+~~~php
+Route::メソッド('URL', 'コントローラー@アクション')->name('ルート名');
+~~~
+> この名前を使ってルーティングのURLを得るには、route()ヘルパーを使う。
+~~~php
+route('ルート名')
+~~~
+
+> URLにルートパラメーターを含む場合、route()でパラメーターの値を設定して、
+> これを含むURLを得ることができます。
+~~~php
+route('ルート名', ['パラメーター' => 値])
+~~~
+> ルートパラメーターが複数ある場合は連想配列の要素として列挙します。
+~~~php
+route('ルート名', ['パラメーター1' => 値1, 'パラメーター2' => 値2])
+~~~
+
+<br>
+
+* 使用例
+  
+> 使用例のルート一覧
+~~~php
+Route::get('/named_route', [SampleController::class, 'named_route'])->name('named_route');
+Route::get('/named_route/{param}/set', [SampleController::class, 'parameter_set'])->name('parameter_set');
+Route::get('/named_route/first/{param1}/second/{param2}', [SampleController::class, 'parameter_set'])->name('two_parameters');
+~~~
+
+
+> コントローラーのnamed_route()アクションでビューを呼び出す。
+~~~php
+  public function named_route() {
+    return view('samples.named_route', [
+      'title' => '名前付きルート'
+    ]);
+  }
+
+  public function parameter_set($param) {
+    return view('samples.named_route', [
+      'title' => $param
+    ]);
+  }
+
+  public function parameter_set($param1, $param2) {
+    return view('samples.named_route', [
+      'title' => $param1,
+      'subtitle' => $param2,
+
+    ]);
+  }
+~~~
+
+> ビューの中(bladeファイル内)で、route()ヘルパーによってルーティングのURLを表示させる。
+
+~~~html
+<!DOCTYPE html>
+<html lang="ja" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>{{ $title }}</title>
+  </head>
+  <body>
+    <h1>{{ $title }}</h1>
+    @if ( $subtitle != null )
+        <h2>{{ $subtitle }}</h2>
+    @endif
+    <p>{{ route('named_route') }}</p>
+    <p>{{ route('parameter_set', ['param' => 100]) }}</p>
+    <p>{{ route('two_parameters', ['param1' => 100, 'param2' => 200 ])}}</p>
+  </body>
+</html>
+~~~
+
+> 名前付きルートで呼び出したURLの結果は以下のように表示されます。
+~~~
+http://localhost:3000/named_route
+http://localhost:3000/named_route/100/set
+http://localhost:3000/named_route/first/100/second/200
+~~~
+
+<br>
+
+## バリデェーション
+
+> バリデーションとは、入力データが正しいかどうかをチェックする機能です。Laravelでは、formなどからの受信データをバリデーションするための方法がいくつかあります。このセクションではもっとも一般的なvalidateメソッドを使用する方法を紹介します。また、validateメソッドはすべての受信HTTPリクエストで使用可能です。
+
+<br>
+
+* バリディレーションを定義する準備
+
+> まず、routes/web.phpファイルに以下のルートを定義してあるとします。<br>
+> GETのルートは新しいブログポストをユーザーへ表示し、POSTルートで新しいブログポストをデータベースへ保存します。
+~~~php
+Route::get('/post/create', [PostController::class, 'create']);
+Route::post('/post', [PostController::class, 'store']);
+~~~
+
+> 次に、これらのルートへの受信リクエストを処理する単純な以下のようなコントローラが定義してあるとします。今のところ、storeメソッドは空のままにしておきます。
+
+~~~php
+class PostController extends Controller
+{
+    public function create()
+    {
+        return view('post.create');
+    }
+
+    public function store(Request $request)
+    {
+        // ブログポストのバリデーションと保存コード…
+    }
+}
+~~~
+
+<br>
+
+* バリデーションを定義する
+
+> 上記のstoreメソッド内でバリデーションを定義します。<br>
+> 'required|unique:posts|max:255' の部分がバリデートする条件になります。
+> この指定した条件を満たさなかった値が1つでもあれば、エラーとなります。
+~~~php
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'title' => 'required|unique:posts|max:255',
+        'body' => 'required',
+    ]);
+
+    // ブログポストは有効
+}
+~~~
+
+> 他にもいろいろバリデーションルールがあるので、[ことらのサイトを参照してみてください。]('required|unique:posts|max:255')
+
+<br>
+
+* エラー時の処理例1
+
+> 受信リクエストがバリデーションルールにパスしない場合、Laravelはユーザーを直前の場所へ自動的にリダイレクトします。さらに、すべてのバリデーションエラーとリクエスト入力は自動的にセッションに一時保持保存されます。<br>
+バリデーション機能でエラーになった場合、直前のビュー(blade.phpファイル)内で<span style = "color: red;">$errors</span>変数を定義し使用できます。<br>
+この例では、バリデーションに失敗すると、エラーメッセージをビューで表示できるように、コントローラのcreateメソッドへリダイレクトされることになります。
+
+~~~html
+<!-- /resources/views/post/create.blade.php -->
+
+<h1>Create Post</h1>
+
+@if ($errors->any())
+    <div class="alert alert-danger">
+        <ul>
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+<!-- Postフォームの作成 -->
+~~~
+
+<br>
+
+  * エラー時の処理例2
+
+> 以下の例では、@errorBladeディレクティブを使用して、特定の属性にバリデーションエラーメッセージが存在するかどうかを簡単に判断できます。@errorディレクティブ内で、$message変数をエコーし​​てエラーメッセージを表示できます。
+
+~~~html
+<!-- /resources/views/post/create.blade.php -->
+
+<label for="title">Post Title</label>
+
+<input id="title"
+    type="text"
+    name="title"
+    class="@error('title') is-invalid @enderror">
+
+@error('title')
+    <div class="alert alert-danger">{{ $message }}</div>
+@enderror
+~~~
+
+<br>
+
+* エラー時の処理例3
+
+> バリデーションによってエラーになり直前のビューに戻った際、フォームへ入力していた値がすべて消えていたら、ユーザーは再度入力しなくてはならず不便です。<br>
+> そこでLaravelでは、oldメソッドを使用し入力されていたフォームの値を再取得できます。<br>
+> 以下のように定義でき、エラーで直前のビューに戻っても、エラーではなかった値はフォームに入力された状態を保ちます。
+~~~html
+<input type="text" name="title" value="{{ old('title') }}">
+~~~
+
+> バリデーションの基本的な使用方法は以上です。他にもたくさん機能があるので気になる方は[こちらの公式ドキュメントを参照してください。](https://readouble.com/laravel/9.x/ja/validation.html)
+
+<br>
+
+# コレクション
+
+>Laravelにはコレクション機能というものがあり、多機能でとにかく便利です。
+例えば、「ユーザテーブルを SELECE して ID 一覧を取得したい」とします。
+よくある PHP のコードは以下のようになりますが、
+~~~php
+$users = User::all();
+
+$userIds = [];
+foreach ($users as $user) {
+    $userIds[] = $user->id;
+}
+~~~
+
+> しかし、コレクション機能を使うと以下のように書けます。
+~~~php
+$users = User::all();
+$userIds = $users->pluck('id');
+~~~
+
+> 他にもたくさんありますが、とりあえずいくつかだけ見たい方は[こちらのサイトを参照してください。](https://atuweb.net/201808_laravel-collection-useful/)<br>
+> Lravelマスターになりたい方はかなり数のコレクション機能を説明してくれている[こちらのサイトを参照してください。](https://blog.capilano-fw.com/?p=727)<br>
+> 公式ドキュメントを見てみたい方は[こちらを参照してください。](https://readouble.com/laravel/9.x/ja/collections.html)
+
+<br>
+
+# ヘルパ
+
+>LaravelにはヘルパPHP関数というものがあり、こちらも多機能でとにかく便利です。
+例えば、Arr::addメソッドは指定キー／値のペアをそのキーが存在していない場合とnullがセットされている場合に、配列に追加するというものがあります。
+
+~~~php
+$array = Arr::add(['name' => 'Desk'], 'price', 100);
+
+// ['name' => 'Desk', 'price' => 100]
+
+$array = Arr::add(['name' => 'Desk', 'price' => null], 'price', 100);
+
+// ['name' => 'Desk', 'price' => 100]
+~~~
+
+> 他にもたくさんありますが、とりあえずいくつかだけ見たい方は[こちらのサイトを参照してください。](https://qiita.com/hirokimituya/items/3fa196463568966d09f0)<br>
+> Lravelマスターになりたい方はかなり数のコレクション機能を説明してくれている[こちらのサイトを参照してください。](https://blog.capilano-fw.com/?p=837)<br>
+> 公式ドキュメントを見てみたい方は[こちらを参照してください。](https://readouble.com/laravel/9.x/ja/helpers.html#method-array-add)
 
 <br>
 
