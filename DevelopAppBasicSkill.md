@@ -1,4 +1,6 @@
-# プロジェクト構築編
+# プロジェクト構築の基礎編
+
+<br>
 
 # ルート
 
@@ -8,7 +10,7 @@
 
 <br>
 
-* 基本の定義方法1
+## 基本の定義方法1
 ~~~php
 Route::get('/', function () {
     return view('welcome');
@@ -19,7 +21,7 @@ Route::get('/', function () {
 
 <br>
 
-* 基本の定義方法2
+## 基本の定義方法2
 ~~~php
 Route::get('/database', function(){
     return view('database');
@@ -30,7 +32,7 @@ Route::get('/database', function(){
 
 <br>
 
-* 基本の定義方法3
+## 基本の定義方法3
 ~~~php
 Route::get('/user', [UserController::class, 'index']);
 ~~~
@@ -38,7 +40,7 @@ Route::get('/user', [UserController::class, 'index']);
 
 <br>
 
-* 基本の定義方法4
+## 基本の定義方法4
 ~~~php
 Route::get($uri, $callback);
 Route::post($uri, $callback);
@@ -51,7 +53,7 @@ Route::options($uri, $callback);
 
 <br>
 
-* 基本の定義方法5
+## 基本の定義方法5
   
 ~~~php
 Route::redirect('/here', '/there');
@@ -60,7 +62,7 @@ Route::redirect('/here', '/there');
 
 <br>
 
-* 基本の定義方法6
+## 基本の定義方法6
 
 ~~~php
 Route::redirect('/here', '/there', 301);
@@ -70,7 +72,7 @@ Route::permanentRedirect('/here', '/there');
 
 <br>
 
-* 基本の定義方法7
+## 基本の定義方法7
 ~~~php
 Route::get(
     '/user/profile',
@@ -84,20 +86,21 @@ Route::get(
 
 <br>
 
-* その他のルート定義方法
+## その他のルート定義方法
 
 [日本語版公式ドキュメントをURLを参照してください。](
 https://readouble.com/laravel/9.x/ja/routing.html)
 
 <br>
 
-* 定義されているルートを確認する
+## 定義されているルートを確認する
 ~~~php
 sail artisan route:list
 php artisan route:list (sail未使用の場合)
 ~~~
 > 上記のコマンドを実行すれば、現在定義されているルートの一覧を確認できます。
 
+<br>
 <br>
 
 # アプリケーションをCSRF攻撃から守る
@@ -115,7 +118,7 @@ php artisan route:list (sail未使用の場合)
 <br>
 
 
-* APIルートを定義する
+## APIルートを定義する
 > LaravelでAPIルートを定義する際は、上記での定義方法と少し異なります。まず初めに、APIルートを定義する場合は、example-app/routes/api.php ファイルに定義します。このファイル内には以下のようになっていると思います。
 ~~~php
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
@@ -133,16 +136,16 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 > 定義したAPIルートへアクセスする場合、web.phpで定義されたルートへは、[http://localhost:8000/setvalue]ですが、APIルートの場合は、[http://localhost:8000/api/setvalue]でアクセスできます。
 
 <br>
-
-# コントローラー
 <br>
 
-* 概要
+# コントローラー
+
+## 概要
 > Laravelでは、ルートのリクエスト処理はすべてコントローラークラスで行います。コントローラークラスは、app/Http/Controllers ディレクトリ内に存在します。コントローラークラスはartisanコマンドで生成しますが、自動的にこのディレクトリに割り振られます。
 
 <br>
 
-* コントローラーの生成
+## コントローラーの生成
 ~~~
 sail artisan make:controller ExamplController
 php artisan make:controller ExamplController
@@ -151,7 +154,7 @@ php artisan make:controller ExamplController
 
 <br>
 
-* もっと便利なコントローラーを生成するコマンド
+## もっと便利なコントローラーを生成するコマンド
 
 ~~~php
 sail artisan make:controller ExamplController --resource
@@ -191,7 +194,7 @@ Route::resource('example', ExampleController::class);
 
 <br>
 
-* 実際に定義してみる
+## 実際に定義してみる
 > 例えば、あるコントローラークラスの class UserController{} 内に以下のコードを記述する。
 ~~~php
  public function show($id)
@@ -214,10 +217,10 @@ Route::get('/user/{id}', [UserController::class, 'show']);
 
 <br>
 
-* Laravelでのマジックメソッドの使い方
+## Laravelでのマジックメソッドの使い方
 > コントローラークラス内に記述できる代表的なマジックメソッドの使用例を記載します。
 
-1. __construct()
+* __construct()
 >　新たにオブジェクトが 生成される度にこのメソッドをコールされ、そのオブジェクトを使用する前に必要な初期化を行うことができます。要は、new したときに呼ばれます。使用例は、ルーティングでUserController内のメソッドが指定されていれば必ず、オブジェクトの生成がされるので
 複数のメソッドで使う、DIだったりミドルウェアの適応等に適しています
 ~~~php
@@ -237,7 +240,7 @@ class UserController extends Controller
 
 <br>
 
-2. __destruct()
+* __destruct()
 >  特定のオブジェクトを参照するリファレンスがひとつもなくなったときにコールされます。 あるいは、スクリプトの終了時にも順不同でコールされます。
 要は、オブジェクトが破棄される際や、スクリプトが終わったら実行されます。使用例は、ファイルのポインタ開いたのをを閉じたり、GuzzleとかCurlHttpClient等ではつかってるぽいです
 ~~~php
@@ -264,7 +267,7 @@ echo fgets($file->handle); //1行目が表示
 
 <br>
 
-3. __invoke()
+* __invoke()
 > スクリプトがオブジェクトを関数のように呼び出したときに起動します。
 ~~~php
 class User
@@ -316,6 +319,8 @@ class ShowProfile extends Controller
 <br>
 
 # リダイレクト
+
+<br>
 
 ## 他のURLへリダイレクト
 > ユーザーを他のURLへリダイレクトさせるための定義方法
@@ -649,12 +654,12 @@ public function update(Request $request)
 
 <br>
 
-## ルートヘルパ
+# ルートヘルパ
+> ルートヘルパは、ルート定義の際にname()メソッドを使用し、ルートに名前を付けることができます。
+
 <br>
 
-* 定義方法
-
-> ルートヘルパは、ルート定義の際にname()メソッドを使用し、ルートに名前を付けることができます。
+## 定義方法
 ~~~php
 Route::メソッド('URL', 'コントローラー@アクション')->name('ルート名');
 ~~~
@@ -675,7 +680,7 @@ route('ルート名', ['パラメーター1' => 値1, 'パラメーター2' => �
 
 <br>
 
-* 使用例
+## 使用例
   
 > 使用例のルート一覧
 ~~~php
@@ -738,13 +743,13 @@ http://localhost:3000/named_route/first/100/second/200
 
 <br>
 
-## バリデェーション
+# バリデェーション
 
 > バリデーションとは、入力データが正しいかどうかをチェックする機能です。Laravelでは、formなどからの受信データをバリデーションするための方法がいくつかあります。このセクションではもっとも一般的なvalidateメソッドを使用する方法を紹介します。また、validateメソッドはすべての受信HTTPリクエストで使用可能です。
 
 <br>
 
-* バリディレーションを定義する準備
+## バリディレーションを定義する準備
 
 > まず、routes/web.phpファイルに以下のルートを定義してあるとします。<br>
 > GETのルートは新しいブログポストをユーザーへ表示し、POSTルートで新しいブログポストをデータベースへ保存します。
@@ -772,7 +777,7 @@ class PostController extends Controller
 
 <br>
 
-* バリデーションを定義する
+## バリデーションを定義する
 
 > 上記のstoreメソッド内でバリデーションを定義します。<br>
 > 'required|unique:posts|max:255' の部分がバリデートする条件になります。
