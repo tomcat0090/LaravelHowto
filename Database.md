@@ -769,6 +769,15 @@ class User extends Model
 $user_comments = User::find(1)->comments;
 ~~~
 
+> 上記例と違うが、whereも含めた場合のSQLクエリはこんな感じ<br>
+
+> User::find(1)->comments()->where('title', 'LIKE', '%この%')->sql();<br>
+=> "select * 
+    from `comments` 
+    where `comments`.`user_id` = ? 
+    and `comments`.`user_id` is not null 
+    and `title` LIKE ?"
+
 > このセクションでは、１対多のリレーションのみ紹介します。
 > その他の1対1や多対多のリレーション定義は、[こちらの公式ドキュメント](https://readouble.com/laravel/9.x/ja/eloquent-relationships.html#one-to-one)を参照してください。公式ですが、それなりに分かりやすくまとまっています。
 
@@ -776,4 +785,108 @@ $user_comments = User::find(1)->comments;
 
 # Eagerロードによるモデル取得
 
-> 
+> よく取り上げられるクエリ問題で「N+1クエリ問題」というのがあります。
+> これはこのセクションで説明するEagerロードで解決できます。<br>
+> ここではよくある例を参考にして説明していきます。
+
+<br>
+
+*  Bookモデルにリレーションを定義
+~~~php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Book extends Model
+{
+    use HasFactory;
+
+    /**
+     * この本を書いた著者を取得
+     */
+    public function author()
+    {
+        return $this->belongsTo(Author::class); // 追記
+    }
+}
+~~~
+
+> Eagerロードを使わない場合と使った場合の2パターンを比較して見ます。
+
+~~~php
+$books = Book::all();
+~~~
+> 上記のSQLクエリを実行したところ、計101件のクエリが実行されます。
+~~~
+# 一回目
+select * from `books`
+
+# 二回目以降
+select * from `authors` where `authors`.`id` = 1 limit 1
+select * from `authors` where `authors`.`id` = 2 limit 1
+select * from `authors` where `authors`.`id` = 3 limit 1
+・
+・
+・
+~~~
+
+<br>
+
+> これをEagerロードで実行すると、
+
+~~~php
+ $books = Book::with('author')->get();
+~~~
+> 計2件のクエリのみ実行されます。
+
+~~~
+# 一回目
+select * from `books`
+
+# 二回目
+select * from `authors` where `authors`.`id` in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ... 100)
+~~~
+> 1回は本のデータ取得、もう1回は全ての本の全ての著者を取得するクエリです。
+where inを使うことで一括で著者を取得していることが分かります。
+ちなみに著者を取得するクエリはforeachの中ではなく、Book::with('author')->get()の時点で実行されています。
+実行時間は約9ミリ秒でEagerロードを使用しない場合(108ミリ秒)と比較して実行速度が上がっておりパフォーマンスが向上していることがわかります。
+
+<br>
+
+## 条件付きEagerロード
+
+> Eagerロードクエリに条件を追加したい場合は以下のようにクエリ発行できます。
+~~~php
+$users = App\User::with(['posts' => function ($query) {
+    $query->where('title', 'like', '%first%')->orderBy('created_at', 'desc');
+}])->get();
+~~~
+この例でEloquentは、titleカラムの内容にfirstという言葉を含むポストのみをフィルターにかけ、created_atで並び替えをしてEagerロードしています。Eagerロード操作を更にカスタマイズするために、他のクエリビルダを呼び出すこともできます。
+
+<br>
+
+# 関連したモデルの挿入／更新
+
+> 新しいモデルをリレーションに追加するために便利なメソッドを用意しています。たとえばPostモデルに新しいCommentを挿入する必要がある場合です。Commentのpost_id属性を自分で設定する代わりに、リレーションのsaveメソッドで直接Commentを挿入できます。
+
+~~~php
+$comment = new App\Comment(['message' => 'A new comment.']);
+
+$post = App\Post::find(1);
+
+$post->comments()->save($comment);
+~~~
+
+> これでsaveメソッドは自動的に新しいCommentモデルのpost_idへ適した値を代入します。
+
+> 複数の関連したモデルを保存する必要があるなら、saveManyメソッドを使用できます。
+
+~~~php
+$post = App\Post::find(1);
+
+$post->comments()->saveMany([
+    new App\Comment(['message' => 'A new comment.']),
+    new App\Comment(['message' => 'Another comment.']),
+]);
+~~~
