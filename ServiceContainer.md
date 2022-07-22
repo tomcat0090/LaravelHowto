@@ -186,3 +186,8 @@ class RiakServiceProvider extends ServiceProvider
 ~~~
 
 > また他の記事ですが、[こちら](https://reffect.co.jp/laravel/laravel-service-provider-understand)を読んでいただければ、サービスコンテナとサービスプロバイダーの関係性や実装方法がわかるかと思います。
+
+こちらの動画でも実装方法が紹介されています。
+
+* [youtube](https://www.youtube.com/watch?v=Lf6R5oDtkFo)
+* [youtube](https://www.youtube.com/watch?v=5glsdzGeYQo&t=86s)
