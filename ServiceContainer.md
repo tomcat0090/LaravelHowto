@@ -187,7 +187,322 @@ class RiakServiceProvider extends ServiceProvider
 
 > また他の記事ですが、[こちら](https://reffect.co.jp/laravel/laravel-service-provider-understand)を読んでいただければ、サービスコンテナとサービスプロバイダーの関係性や実装方法がわかるかと思います。
 
-こちらの動画でも実装方法が紹介されています。
+<br>
 
-* [youtube](https://www.youtube.com/watch?v=Lf6R5oDtkFo)
-* [youtube](https://www.youtube.com/watch?v=5glsdzGeYQo&t=86s)
+## なんだか使い方がよくわからないので動画での参考資料
+
+こちらの動画で実装方法が紹介されています。
+
+
+* [youtube 動画1](https://www.youtube.com/watch?v=Lf6R5oDtkFo)
+* [youtube 動画2](https://www.youtube.com/watch?v=5glsdzGeYQo&t=86s)
+
+<br>
+
+## 動画1のまとめ
+　
+> 現在地を取得できるサービスコンテナを実
+
+>下記のコマンドを実行してプロバイダーを生成しておく。
+
+~~~
+sail artisan make:provider GeolocationServiceProvider
+~~~
+
+> app/Providerフォルダに生成される。下記のコードを含んでいます。
+
+~~~php
+
+// interface IGeolocationServie {
+//   public function search(string $address): Point;
+// }
+
+
+class GeolocationServiceProvider extends ServiceProvider
+{
+    /**
+     * Register services.
+     *
+     * @return void
+     */
+    public function register()
+    {
+      // $this->app->bind(IGeolocationService::class, Geolocation::class); // 使いたいサービスを切り替えられる
+      // $this->app->bind(IGeolocationService::class, GoogleGeolocation::class); // 使いたいサービスを切り替えられる
+
+      $this->app->bind(abstract Geolocation::class, function($app){
+          $map = new Map();
+          $satellite = new Satellite();
+
+          return new Geolocation($map, $satellite);
+        })
+    }
+
+    /**
+     * Bootstrap services.
+     *
+     * @return void
+     */
+    public function boot()
+    {
+        //
+    }
+
+
+    // public function (IGeolocationService $geolocationService)
+    // {
+    //     $geolocationService->search(string) => point
+    // }
+}
+~~~
+
+<br>
+
+> Geolocation.php 
+
+~~~php
+class Geolocation implements IGeolocationService {
+
+  private $map;
+  private $satellite
+
+  public function __construct(Map $map, Satellite $satellite)
+  {
+    $this->map = $map;
+    $this->satellite = $satellite;
+  }
+
+  public function search(string $name)
+  {
+    // ...
+    $locationInfo = $this->map->findAddress($name);
+
+    return $this->satellite->pinpoint($locationInfo);
+  }
+}
+
+// class GoogleGeolocationSerive implements IGeolocationService {
+//   public function search()....
+// }
+
+
+~~~
+
+<br>
+
+> Map.php
+
+~~~php
+class Map
+{
+  public function findAddress(string $address){
+    // ...
+
+    return [
+      // an array of info
+    ];
+  }
+}
+~~~
+
+<br>
+
+> Satellite.php
+
+~~~php
+class Satellite
+{
+  public function pinpoint(array $info){
+    // ...
+
+    return [123,123];
+  }
+}
+~~~
+
+<br>
+
+> GeolocationServiceProvider.phpへの追記、その他3つのphpファイルの作成と記述がおわったら、app/config/app.phpファイル最下部へ以下のように追記
+
+~~~php
+
+    'providers' => [
+
+        /*
+         * Laravel Framework Service Providers...
+         */
+        Illuminate\Auth\AuthServiceProvider::class,
+        Illuminate\Broadcasting\BroadcastServiceProvider::class,
+        Illuminate\Bus\BusServiceProvider::class,
+        Illuminate\Cache\CacheServiceProvider::class,
+        Illuminate\Foundation\Providers\ConsoleSupportServiceProvider::class,
+        Illuminate\Cookie\CookieServiceProvider::class,
+        Illuminate\Database\DatabaseServiceProvider::class,
+        Illuminate\Encryption\EncryptionServiceProvider::class,
+        Illuminate\Filesystem\FilesystemServiceProvider::class,
+        Illuminate\Foundation\Providers\FoundationServiceProvider::class,
+        Illuminate\Hashing\HashServiceProvider::class,
+        Illuminate\Mail\MailServiceProvider::class,
+        Illuminate\Notifications\NotificationServiceProvider::class,
+        Illuminate\Pagination\PaginationServiceProvider::class,
+        Illuminate\Pipeline\PipelineServiceProvider::class,
+        Illuminate\Queue\QueueServiceProvider::class,
+        Illuminate\Redis\RedisServiceProvider::class,
+        Illuminate\Auth\Passwords\PasswordResetServiceProvider::class,
+        Illuminate\Session\SessionServiceProvider::class,
+        Illuminate\Translation\TranslationServiceProvider::class,
+        Illuminate\Validation\ValidationServiceProvider::class,
+        Illuminate\View\ViewServiceProvider::class,
+
+        /*
+         * Package Service Providers...
+         */
+
+        /*
+         * Application Service Providers...
+         */
+        App\Providers\AppServiceProvider::class,
+        App\Providers\AuthServiceProvider::class,
+        // App\Providers\BroadcastServiceProvider::class,
+        App\Providers\EventServiceProvider::class,
+        App\Providers\RouteServiceProvider::class,
+
+        ///////
+        App\Providers\GeolocationServiceProvider::class, // 追加
+        //////
+
+    ],
+~~~
+
+> こんなふうに使えます。
+~~~php
+public function Somethig(GeolocationServiceProvider $geolocationServiceProvider){
+  $geolocationServiceProvider->map //...
+
+}
+~~~
+
+<br>
+
+> Interfaceを利用して使いたいサービスを変更できるような実装の例
+
+~~~
+sail artisan make:provider StorageServiceProvider
+~~~
+
+~~~php
+namespace App\Providers;
+
+use App\Services\StorageService\DemoStorageService;
+use App\Services\StorageService\IStorageService;
+use Illuminate\Support\ServiceProvider;
+
+class StorageServiceProvider extends ServiceProvider
+{
+    /**
+     * Register services.
+     *
+     * @return void
+     */
+    public function register()
+    {
+        $this->app->bind(IStorageService::class, DemoStorageService::class);
+
+        // これを実行すれば、対象となるサービスをDemoStorageServiceからRealStorageServiceへ切り替えられる。StorageServiceを使うときは対象のサービスのことを意識しなくて済むようになります。しかも簡単に切り替えられる。
+        // $this->app->bind(IStorageService::class, RealStorageService::class); 
+    }
+
+    /**
+     * Bootstrap services.
+     *
+     * @return void
+     */
+    public function boot()
+    {
+        //
+    }
+}
+~~~
+
+~~~php
+namespace App\Services\StorageService;
+
+
+interface IStorageService {
+    public function createFile(string $fileName);
+    public function renameFile(string $oldFileName, string $newFileName);
+    public function removeFile(string $fileName);
+}
+~~~
+
+~~~php
+namespace App\Services\StorageService;
+
+
+class DemoStorageService implements IStorageService {
+    public function createFile(string $fileName)
+    {
+        var_dump("create new file {$fileName}");
+    }
+
+    public function renameFile(string $oldFileName, string $newFileName)
+    {
+        var_dump("rename file {$newFileName} from {$oldFileName}");
+    }
+    public function removeFile(string $fileName)
+    {
+        var_dump("remove file {$fileName}");
+    }
+}
+
+
+class RealStorageService implements IStorageService {
+    public function createFile(string $fileName)
+    {
+        var_dump("create new file {$fileName}");
+    }
+
+    public function renameFile(string $oldFileName, string $newFileName)
+    {
+        var_dump("rename file {$newFileName} from {$oldFileName}");
+    }
+    public function removeFile(string $fileName)
+    {
+        var_dump("remove file {$fileName}");
+    }
+}
+
+~~~
+
+~~~php
+    'providers' => [
+
+        // ....
+        // ....
+        Illuminate\View\ViewServiceProvider::class,
+
+        /*
+         * Package Service Providers...
+         */
+
+        /*
+         * Application Service Providers...
+         */
+        App\Providers\AppServiceProvider::class,
+        App\Providers\AuthServiceProvider::class,
+        // App\Providers\BroadcastServiceProvider::class,
+        App\Providers\EventServiceProvider::class,
+        App\Providers\RouteServiceProvider::class,
+
+
+        StorageServiceProvider::class, // 追加
+    ],
+~~~
+
+~~~php
+Route::get('/', function (IStorageService $storageService) {
+    $storageService->createFile('new_file.txt'); // これがこんな感じで出力します。「string(28) "create new file new_file.txt"」
+
+    return view('welcome');
+});
+~~~
